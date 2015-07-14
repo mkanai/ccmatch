@@ -6,14 +6,15 @@
 using namespace Rcpp;
 
 // ccmatch
-DataFrame ccmatch(NumericMatrix x, int N);
-RcppExport SEXP ccmatch_ccmatch(SEXP xSEXP, SEXP NSEXP) {
+DataFrame ccmatch(NumericMatrix x, int N, bool display_progress);
+RcppExport SEXP ccmatch_ccmatch(SEXP xSEXP, SEXP NSEXP, SEXP display_progressSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
     Rcpp::traits::input_parameter< int >::type N(NSEXP);
-    __result = Rcpp::wrap(ccmatch(x, N));
+    Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
+    __result = Rcpp::wrap(ccmatch(x, N, display_progress));
     return __result;
 END_RCPP
 }

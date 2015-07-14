@@ -3,10 +3,15 @@
 #include <queue>
 #include <Rcpp.h>
 
+// [[Rcpp::depends(RcppProgress)]]
+#include <progress.hpp>
+
 using namespace std;
 using namespace Rcpp;
 
 #define INF numeric_limits<double>::infinity()
+#define RET_NO_SOLUTION -1
+#define RET_ABORTED -2
 
 typedef pair<double, int> Pair;
 typedef struct
@@ -27,7 +32,7 @@ void add_edge(graph_t &graph, int from, int to, int capacity, double cost)
 
 
 // solve minimun cost flow problem from s to t to flow f
-double min_cost_flow(graph_t &graph, int s, int t, int f)
+double min_cost_flow(graph_t &graph, int s, int t, int f, bool display_progress)
 {
     int V = graph.size(); // number of vertices
     vector<double> h(V, 0); // potential
@@ -37,8 +42,12 @@ double min_cost_flow(graph_t &graph, int s, int t, int f)
 
     double ret = 0;
 
+    Progress progress(f, display_progress);
     while (f > 0)
     {
+        if (Progress::check_abort())
+            return RET_ABORTED;
+        
         // Dijkstra algorithm
         priority_queue<Pair, vector<Pair>, greater<Pair> > que;
         fill(dist.begin(), dist.end(), INF);
@@ -69,7 +78,7 @@ double min_cost_flow(graph_t &graph, int s, int t, int f)
 
         // no solution
         if (dist[t] == INF)
-            return -1;
+            return RET_NO_SOLUTION;
 
         // update potential
         for (int v = 0; v < V; v++)
@@ -79,6 +88,8 @@ double min_cost_flow(graph_t &graph, int s, int t, int f)
         for (int v = t; v != s; v = prevv[v])
             d = min(d, graph[prevv[v]][preve[v]].capacity);
         f -= d;
+        progress.increment(d);
+
         ret += d * h[t];
         for (int v = t; v != s; v = prevv[v])
         {
@@ -93,7 +104,7 @@ double min_cost_flow(graph_t &graph, int s, int t, int f)
 Function asDataFrame("as.data.frame");
 
 // [[Rcpp::export(".ccmatch")]]
-DataFrame ccmatch(NumericMatrix x, int N) {
+DataFrame ccmatch(NumericMatrix x, int N, bool display_progress) {
     int ncase = x.nrow(), ncontrol = x.ncol();
 
     int s = ncase + ncontrol, t = s + 1;
@@ -109,11 +120,13 @@ DataFrame ccmatch(NumericMatrix x, int N) {
     for (int j = 0; j < ncontrol; j++)
         add_edge(graph, ncase + j, t, 1, 0);
 
-    double min_cost = min_cost_flow(graph, s, t, ncase * N);
-    if (min_cost < 0)
+    double min_cost = min_cost_flow(graph, s, t, ncase * N, display_progress);
+    if (min_cost == RET_NO_SOLUTION)
     {
         stop("No solution found.");
-        return NULL;
+    } else if (min_cost == RET_ABORTED)
+    {
+        stop("Aborted.");
     }
 
     NumericMatrix mat(ncase, N + 2);
