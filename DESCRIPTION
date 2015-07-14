@@ -1,0 +1,11 @@
+Package: ccmatch
+Type: Package
+Title: R package for optimal matching of cases to controls using network flow theory.
+Version: 1.0
+Date: 2015-07-14
+Author: Masahiro Kanai
+Maintainer: Masahiro Kanai <masahiro.kanai@riken.jp>
+Description: This package implements optimal matching of cases to controls at a given ratio by solving a minimum cost flow problem.
+License: GPL (>= 2)
+Imports: Rcpp (>= 0.11.5), proxy
+LinkingTo: Rcpp
